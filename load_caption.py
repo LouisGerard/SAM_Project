@@ -1,7 +1,6 @@
 import numpy as np
 import json
-import keras
-from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.tokenize import word_tokenize
 from keras.applications.resnet50 import ResNet50
 from keras.preprocessing import image
 
@@ -9,24 +8,25 @@ from keras.applications.imagenet_utils import preprocess_input
 
 resnet_model = ResNet50(weights='imagenet', include_top=False, pooling="avg")
 
-def extract_features_caption(img_folder="data/train2014/",
-                            caption_file='data/annotations/captions_train2014.json',
-                            save_captions=True,
+def extract_features_caption(save_captions=True,
                             _type="train",
                             save_features=True,
                             save_all=False):
     features = []
     captions = []
     i = 0
+    img_folder = "data/{}2014/".format(_type)
+    caption_file = "data/annotations/captions_{}2014.json".format(_type)
     if save_captions:
         open("./"+_type+".captions.txt", 'w').close()
-    with open('data/annotations/captions_train2014.json', 'r') as f:
+    with open(caption_file, 'r') as f:
         data = json.load(f)
     for img in data['images']:
         im = image.load_img(img_folder+img['file_name'], target_size=(224, 224))
         x = image.img_to_array(im)
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
+        feature_img = np.expand_dims(resnet_model.predict(x).flatten(), axis=0)
         
         found = False
         for annotation in data['annotations']:
@@ -34,7 +34,7 @@ def extract_features_caption(img_folder="data/train2014/",
                 if annotation['image_id'] == img['id']:
                     words = word_tokenize(annotation['caption'])
                     words=[word.lower() for word in words if word.isalpha()]
-                    features.append(np.expand_dims(resnet_model.predict(x).flatten(), axis=0))
+                    features.append(feature_img)
                     captions.append(' '.join(words))
                     if save_captions:
                         with open("./"+_type+".captions.txt",'a') as fp:
