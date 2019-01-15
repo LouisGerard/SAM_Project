@@ -6,19 +6,27 @@ from keras.preprocessing import image
 
 from keras.applications.imagenet_utils import preprocess_input
 
-resnet_model = ResNet50(weights='imagenet', include_top=False, pooling="avg")
+
 
 def extract_features_caption(save_captions=True,
                             _type="train",
                             save_features=True,
-                            save_all=False):
+                            save_all=False,
+                            pooling=True,
+                            name=''):
+    
+    if pooling:
+        resnet_model = ResNet50(weights='imagenet', include_top=False, pooling="avg")
+    else:
+        resnet_model = ResNet50(weights='imagenet', include_top=False)
+    
     features = []
     captions = []
     i = 0
     img_folder = "data/{}2014/".format(_type)
     caption_file = "data/annotations/captions_{}2014.json".format(_type)
     if save_captions:
-        open("./"+_type+".captions.txt", 'w').close()
+        open("./"+_type+name+".captions.txt", 'w').close()
     with open(caption_file, 'r') as f:
         data = json.load(f)
     for img in data['images']:
@@ -37,7 +45,7 @@ def extract_features_caption(save_captions=True,
                     features.append(feature_img)
                     captions.append(' '.join(words))
                     if save_captions:
-                        with open("./"+_type+".captions.txt",'a') as fp:
+                        with open("./"+_type+name+".captions.txt",'a') as fp:
                             fp.write(str(img['file_name'])+'\t'+(' '.join(words))+'\n')
                     if not save_all:
                         found = True
@@ -49,7 +57,7 @@ def extract_features_caption(save_captions=True,
         
     features = np.array(features)
     features = features.reshape((-1,2048))
-    np.save('resnet50-features.train.40k.npy',features)
+    np.save('resnet50-features.'+_type+name+'.40k.npy',features)
     return features,captions
 
 
